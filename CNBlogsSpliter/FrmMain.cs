@@ -16,8 +16,6 @@ namespace CNBlogsSpliter
         public FrmMain()
         {
             InitializeComponent();
-
-            CBridge.FrmMain = this;
         }
 
         private readonly List<string> titles = new List<string>();

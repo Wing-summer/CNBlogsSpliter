@@ -193,7 +193,13 @@ namespace CNBlogsSpliter
             foreach (SyndicationItem item in info.Items)
             {
                 var content = item.Summary.Text;
-                var titile = item.Title.Text;
+                var tstring = new StringBuilder(item.Title.Text);
+                foreach (var ch in Path.GetInvalidFileNameChars())
+                {
+                    tstring.Replace(ch, '_');
+                }
+                var titile = tstring.ToString();
+
                 var inper = per;
 
                 string outfilename;
@@ -219,32 +225,34 @@ namespace CNBlogsSpliter
 
                     AppendLineInfo($"> 匹配完毕，{titile} 文件中的图片总共 {links.Count} 个。");
 
-                    inper /= links.Count;
-
                     var dir = Directory.CreateDirectory(Path.Combine(outpath, titile));
-
-                    var imgdir = dir.CreateSubdirectory("img");
-
-                    AppendLineInfo($"> 创建 {dir.Name} 完毕，初始化文件更改中……");
-
-                    StringBuilder builder = new StringBuilder(content);
-
-                    foreach (var link in links)
+                    if (links.Count>0)
                     {
-                        AppendLineInfo($"> 开始下载 {link} 文件中……");
-                        GetPic(link, dir.FullName, out string filename);
-                        Thread.Sleep(random.Next(0, 1000));
+                        inper /= links.Count;
 
-                        AppendLineInfo($"> 修正图片路径中……");
-                        builder.Replace(link, $@"..\{imgdir.Parent.Name}\{imgdir.Name}\{filename}");
-                        AppendLineInfo($"> 修正图片路径完毕：{filename}。");
+                        var imgdir = dir.CreateSubdirectory("img");
 
-                        total += inper;
-                        bworker.ReportProgress(total);
+                        AppendLineInfo($"> 创建 {dir.Name} 完毕，初始化文件更改中……");
+
+                        StringBuilder builder = new StringBuilder(content);
+
+                        foreach (var link in links)
+                        {
+                            AppendLineInfo($"> 开始下载 {link} 文件中……");
+                            GetPic(link, dir.FullName, out string filename);
+                            Thread.Sleep(random.Next(0, 1000));
+
+                            AppendLineInfo($"> 修正图片路径中……");
+                            builder.Replace(link, $@"..\{imgdir.Parent.Name}\{imgdir.Name}\{filename}");
+                            AppendLineInfo($"> 修正图片路径完毕：{filename}。");
+
+                            total += inper;
+                            bworker.ReportProgress(total);
+                        }
+                        content = builder.ToString();
+                        builder.Clear();
                     }
 
-                    content = builder.ToString();
-                    builder.Clear();
                     outfilename = Path.Combine(outpath, titile, filewithext);
                 }
                 else
@@ -254,8 +262,8 @@ namespace CNBlogsSpliter
 
 
 
-                AppendLineInfo($"> 正在保存 {filewithext} 中……");
-                outputfile = new StreamWriter(outfilename);
+                AppendLineInfo($"> 正在保存 {filewithext} 中……");       
+                outputfile = new StreamWriter(outfilename,false,Encoding.UTF8);
                 outputfile.Write(content);
                 outputfile.Flush();
                 outputfile.Close();
